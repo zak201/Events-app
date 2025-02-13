@@ -5,7 +5,6 @@ import ReactDatePicker, { registerLocale } from 'react-datepicker';
 import { Calendar } from 'lucide-react';
 import fr from 'date-fns/locale/fr';
 import "react-datepicker/dist/react-datepicker.css";
-const LRUCache = require('lru-cache');
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -27,11 +26,6 @@ const CustomInput = forwardRef(({ value, onClick }, ref) => (
 CustomInput.displayName = 'CustomInput';
 
 export default function DatePicker({ selected, onChange, ...props }) {
-  const ratelimitCache = new LRUCache({
-    max: 500,
-    ttl: 60000 // 1 minute
-  });
-
   return (
     <ReactDatePicker
       selected={selected}

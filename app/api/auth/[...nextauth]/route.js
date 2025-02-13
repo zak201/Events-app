@@ -15,34 +15,29 @@ export const authOptions = {
       async authorize(credentials) {
         try {
           await dbConnect();
-          console.log('Email fourni:', credentials.email);
           
           const user = await User.findOne({ 
             email: credentials.email.toLowerCase() 
           }).select('+password');
-          
-          console.log('Utilisateur trouvé:', user ? 'Oui' : 'Non');
-          if (user) {
-            console.log('Email en DB:', user.email);
-            console.log('Mot de passe fourni:', credentials.password);
-            console.log('Hash en DB:', user.password);
-          }
           
           if (!user) {
             console.log('Utilisateur non trouvé');
             return null;
           }
 
-          const isPasswordValid = await user.comparePassword(credentials.password);
-
-          console.log('Vérification du mot de passe:', isPasswordValid);
+          const isValid = await user.comparePassword(credentials.password);
           
-          if (!isPasswordValid) {
+          if (!isValid) {
             console.log('Mot de passe invalide');
             return null;
           }
 
-          console.log('Connexion réussie');
+          console.log('Utilisateur authentifié:', {
+            id: user._id,
+            email: user.email,
+            role: user.role
+          });
+
           return {
             id: user._id.toString(),
             email: user.email,
@@ -56,7 +51,7 @@ export const authOptions = {
       }
     })
   ],
-  session: { 
+  session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60 // 30 jours
   },
@@ -64,11 +59,13 @@ export const authOptions = {
     signIn: '/auth/login',
     error: '/auth/error'
   },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        console.log('JWT callback - token mis à jour:', token);
       }
       return token;
     },
@@ -76,11 +73,12 @@ export const authOptions = {
       if (token) {
         session.user.role = token.role;
         session.user.id = token.id;
+        console.log('Session callback - session mise à jour:', session);
       }
       return session;
     }
   },
-  debug: process.env.NODE_ENV === 'development'
+  debug: true,
 };
 
 const handler = NextAuth(authOptions);

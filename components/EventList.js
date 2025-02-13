@@ -10,16 +10,6 @@ import { fetchEvents } from '@/lib/api';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
 export default function EventList() {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,15 +17,15 @@ export default function EventList() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data: session } = useSession();
 
-  const loadEvents = async (filters = {}) => {
+  const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await fetchEvents(filters);
-      const eventsData = Array.isArray(response) ? response : response?.events || [];
-      setEvents(eventsData);
+      setError(null);
+      const data = await fetchEvents();
+      setEvents(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Erreur chargement événements:', err);
-      setError(err.message || 'Erreur lors du chargement des événements');
+      console.error('Erreur de chargement:', err);
+      setError('Impossible de charger les événements. Veuillez réessayer plus tard.');
     } finally {
       setIsLoading(false);
     }
@@ -45,19 +35,14 @@ export default function EventList() {
     loadEvents();
   }, []);
 
-  const handleSearch = (filters) => {
-    loadEvents(filters);
-  };
-
   if (isLoading) return <Loading />;
-  if (error) return <ErrorMessage message={error} />;
 
   return (
-    <div className="space-y-8">
-      <EventSearch onSearch={handleSearch} />
+    <div className="container mx-auto px-4 py-8">
+      <EventSearch onSearch={loadEvents} />
 
       {session?.user?.role === 'organisateur' && (
-        <div className="flex justify-end">
+        <div className="mb-6 flex justify-end">
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="btn btn-primary"
@@ -67,39 +52,39 @@ export default function EventList() {
         </div>
       )}
 
+      {error && <ErrorMessage message={error} />}
+
       <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         {events.map(event => (
           <EventCard
             key={event._id}
             event={event}
-            onDelete={() => {
-              setEvents(events.filter(e => e._id !== event._id));
-            }}
+            isOrganizer={session?.user?.role === 'organisateur'}
+            onDelete={loadEvents}
           />
         ))}
       </motion.div>
 
-      {events.length === 0 && !isLoading && (
+      {events.length === 0 && !isLoading && !error && (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
-            Aucun événement disponible
-          </p>
+          <p className="text-gray-500">Aucun événement disponible pour le moment</p>
         </div>
       )}
 
-      <CreateEventModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onEventCreated={() => {
-          setIsCreateModalOpen(false);
-          loadEvents();
-        }}
-      />
+      {isCreateModalOpen && (
+        <CreateEventModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onEventCreated={() => {
+            setIsCreateModalOpen(false);
+            loadEvents();
+          }}
+        />
+      )}
     </div>
   );
 } 

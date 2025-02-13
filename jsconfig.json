@@ -7,4 +7,4 @@
     "jsx": "preserve"
   },
   "exclude": ["node_modules", ".next", "out"]
-} 
+}

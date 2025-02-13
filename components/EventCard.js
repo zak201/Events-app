@@ -12,11 +12,15 @@ import { useSession } from 'next-auth/react';
 import { formatDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import ReservationModal from './ReservationModal';
+import { useRouter } from 'next/navigation';
+import LoginPromptModal from './LoginPromptModal';
 
 const EventCard = ({ event }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
   const { data: session } = useSession();
+  const router = useRouter();
 
   const isOrganizer = session?.user?.role === 'organisateur';
   const isFullyBooked = event.reservedSeats >= event.capacity;
@@ -28,6 +32,14 @@ const EventCard = ({ event }) => {
       opacity: 1, 
       y: 0,
       transition: { duration: 0.5 }
+    }
+  };
+
+  const handleReserveClick = () => {
+    if (!session) {
+      setIsLoginPromptOpen(true);
+    } else {
+      setIsReservationModalOpen(true);
     }
   };
 
@@ -74,12 +86,17 @@ const EventCard = ({ event }) => {
         </div>
 
         {/* Bouton Réserver */}
-        <Link 
-          href={`/events/${event._id}`}
-          className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        <button
+          onClick={handleReserveClick}
+          disabled={isFullyBooked}
+          className={`btn w-full ${
+            isFullyBooked 
+              ? 'btn-disabled' 
+              : 'btn-primary'
+          }`}
         >
-          Voir l'événement
-        </Link>
+          {isFullyBooked ? 'Complet' : 'Réserver'}
+        </button>
       </div>
 
       <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
@@ -113,6 +130,15 @@ const EventCard = ({ event }) => {
         onClose={() => setIsReservationModalOpen(false)}
         event={event}
       />
+
+      {isLoginPromptOpen && (
+        <LoginPromptModal
+          isOpen={isLoginPromptOpen}
+          onClose={() => setIsLoginPromptOpen(false)}
+          onLogin={() => router.push('/auth/login')}
+          onSignup={() => router.push('/auth/register')}
+        />
+      )}
     </motion.div>
   );
 };

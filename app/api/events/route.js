@@ -2,7 +2,7 @@ import { withApiHandler } from '@/lib/api/withHandler';
 import { dbConnect } from '@/lib/dbConnect';
 import Event from '@/models/Event';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { eventSchema } from '@/lib/validations/event';
 import path from 'path';
@@ -18,59 +18,24 @@ function serializeDocument(doc) {
   return serialized;
 }
 
-export const GET = withApiHandler(async (request) => {
+export async function GET() {
   try {
     await dbConnect();
     
-    // Récupérer les paramètres de recherche
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const date = searchParams.get('date');
-
-    // Construire la requête
-    let query = {};
-
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    if (date) {
-      const searchDate = new Date(date);
-      const nextDay = new Date(searchDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      
-      query.date = {
-        $gte: searchDate,
-        $lt: nextDay
-      };
-    }
-
-    // Exécuter la requête
-    const events = await Event.find(query)
+    const events = await Event.find({})
       .sort({ date: 1 })
-      .lean()
-      .exec();
-
-    // Sérialiser les documents
-    const serializedEvents = events.map(event => ({
-      ...event,
-      id: event._id.toString(),
-      _id: event._id.toString()
-    }));
-
-    return NextResponse.json(serializedEvents);
+      .populate('organizerId', 'name email')
+      .lean();
+    
+    return NextResponse.json(events);
   } catch (error) {
-    console.error('Erreur recherche événements:', error);
+    console.error('Erreur lors de la récupération des événements:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la recherche des événements' },
+      { error: 'Erreur lors de la récupération des événements' },
       { status: 500 }
     );
   }
-});
+}
 
 // Configuration pour le parsing du multipart/form-data
 export const config = {
@@ -79,18 +44,19 @@ export const config = {
   }
 };
 
-export const POST = withApiHandler(async (request) => {
+export async function POST(req) {
+  const session = await getServerSession(authOptions);
+  
+  if (!session || session.user.role !== 'organisateur') {
+    return NextResponse.json(
+      { error: 'Non autorisé' },
+      { status: 403 }
+    );
+  }
+  
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { message: 'Non autorisé' },
-        { status: 401 }
-      );
-    }
-
     await dbConnect();
-    const formData = await request.formData();
+    const formData = await req.formData();
     
     const eventData = {
       title: formData.get('title'),
@@ -138,4 +104,4 @@ export const POST = withApiHandler(async (request) => {
       { status: 400 }
     );
   }
-}); 
+} 
