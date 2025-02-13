@@ -14,7 +14,10 @@ const eventSchema = z.object({
 export async function GET(request, { params }) {
   try {
     await dbConnect();
-    const event = await Event.findById(params.id);
+    
+    const event = await Event.findById(params.id)
+      .populate('organizerId', 'name email')
+      .lean();
     
     if (!event) {
       return NextResponse.json(
@@ -23,7 +26,9 @@ export async function GET(request, { params }) {
       );
     }
 
-    return NextResponse.json(event);
+    const serializedEvent = serializeDocument(event);
+
+    return NextResponse.json(serializedEvent);
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de l\'événement' },

@@ -7,13 +7,13 @@ import Link from 'next/link';
 import DeleteEventButton from './DeleteEventButton';
 import { useState } from 'react';
 import EditEventModal from './EditEventModal';
-import { CalendarIcon, MapPinIcon } from 'lucide-react';
+import { CalendarIcon, MapPinIcon, UsersIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { formatDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import ReservationModal from './ReservationModal';
 
-export default function EventCard({ event }) {
+const EventCard = ({ event }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const { data: session } = useSession();
@@ -21,65 +21,68 @@ export default function EventCard({ event }) {
   const isOrganizer = session?.user?.role === 'organisateur';
   const isFullyBooked = event.reservedSeats >= event.capacity;
 
+  // Animation pour l'entrée des cartes
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.5 }
+    }
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover={{ y: -5 }}
+      className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
     >
-      <div className="relative h-48">
+      {/* Image de couverture avec effet de zoom au hover */}
+      <div className="relative h-48 overflow-hidden">
         <Image
           src={event.imageUrl || '/images/default-event.jpg'}
           alt={event.title}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-200"
+          className="object-cover transition-transform duration-300 group-hover:scale-110"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
 
+      {/* Contenu de la carte */}
       <div className="p-4">
-        <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-2">
-          {formatDate(event.date)}
-        </p>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">
-          {event.location}
-        </p>
+        <h3 className="text-xl font-bold mb-2 line-clamp-2">{event.title}</h3>
+        
+        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4" />
+            <span>{formatDate(event.date)}</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <MapPinIcon className="w-4 h-4" />
+            <span>{event.location}</span>
+          </div>
 
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {event.reservedSeats} / {event.capacity} places
-          </span>
-
-          {!isOrganizer && session && (
-            <button
-              onClick={() => setIsReservationModalOpen(true)}
-              disabled={isFullyBooked}
-              className={`btn ${
-                isFullyBooked 
-                  ? 'btn-disabled' 
-                  : 'btn-primary hover:btn-primary-dark'
-              }`}
-            >
-              {isFullyBooked ? 'Complet' : 'Réserver'}
-            </button>
-          )}
-
-          {!session && (
-            <Link href="/auth/login" className="btn btn-primary">
-              Se connecter pour réserver
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            <UsersIcon className="w-4 h-4" />
+            <span>
+              {event.capacity - event.reservedSeats} places disponibles
+            </span>
+          </div>
         </div>
+
+        {/* Bouton Réserver */}
+        <Link 
+          href={`/events/${event._id}`}
+          className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          Voir l'événement
+        </Link>
       </div>
 
       <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
-        <Link
-          href={`/events/${event._id}`}
-          className="btn btn-secondary"
-        >
-          Voir plus
-        </Link>
-        
         {isOrganizer && (
           <div className="space-x-2">
             <button
@@ -112,4 +115,6 @@ export default function EventCard({ event }) {
       />
     </motion.div>
   );
-} 
+};
+
+export default EventCard; 

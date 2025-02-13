@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Modal({ isOpen, onClose, title, children }) {
   useEffect(() => {
@@ -21,35 +20,38 @@ export default function Modal({ isOpen, onClose, title, children }) {
     };
   }, [isOpen, onClose]);
 
+  if (!isOpen) return null;
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="modal-overlay"
-          />
-          <div className="modal-container">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="modal-content"
+    <div className="fixed inset-0 z-50">
+      {/* Overlay */}
+      <div 
+        className="fixed inset-0 bg-black/50" 
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {title}
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
             >
-              <div className="modal-header">
-                <h2 className="text-xl font-semibold">{title}</h2>
-                <button onClick={onClose} className="modal-close-button">
-                  <X size={20} />
-                </button>
-              </div>
-              {children}
-            </motion.div>
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        </>
-      )}
-    </AnimatePresence>
+
+          {/* Content */}
+          <div className="p-4">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 } 

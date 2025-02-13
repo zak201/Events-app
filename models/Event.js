@@ -32,7 +32,7 @@ const eventSchema = new mongoose.Schema({
   organizerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'L\'organisateur est requis'],
+    required: true
   },
   reservedSeats: {
     type: Number,

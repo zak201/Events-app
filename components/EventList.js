@@ -1,10 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import EventCard from './EventCard';
+import EventSearch from './EventSearch';
 import CreateEventModal from './CreateEventModal';
 import { useSession } from 'next-auth/react';
 import { fetchEvents } from '@/lib/api';
+import Loading from './Loading';
+import ErrorMessage from './ErrorMessage';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 export default function EventList() {
   const [events, setEvents] = useState([]);
@@ -13,15 +27,15 @@ export default function EventList() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data: session } = useSession();
 
-  const loadEvents = async () => {
+  const loadEvents = async (filters = {}) => {
     try {
       setIsLoading(true);
-      const data = await fetchEvents();
-      console.log('Événements chargés:', data);
-      setEvents(data);
-    } catch (error) {
-      console.error('Erreur chargement événements:', error);
-      setError('Erreur lors du chargement des événements');
+      const response = await fetchEvents(filters);
+      const eventsData = Array.isArray(response) ? response : response?.events || [];
+      setEvents(eventsData);
+    } catch (err) {
+      console.error('Erreur chargement événements:', err);
+      setError(err.message || 'Erreur lors du chargement des événements');
     } finally {
       setIsLoading(false);
     }
@@ -31,54 +45,60 @@ export default function EventList() {
     loadEvents();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[200px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
+  const handleSearch = (filters) => {
+    loadEvents(filters);
+  };
 
-  if (error) {
-    return (
-      <div className="text-center text-red-500 p-4">
-        {error}
-      </div>
-    );
-  }
+  if (isLoading) return <Loading />;
+  if (error) return <ErrorMessage message={error} />;
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Événements à venir</h2>
-        {session?.user?.role === 'organisateur' && (
+    <div className="space-y-8">
+      <EventSearch onSearch={handleSearch} />
+
+      {session?.user?.role === 'organisateur' && (
+        <div className="flex justify-end">
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="btn btn-primary"
           >
             Créer un événement
           </button>
-        )}
-      </div>
-
-      {events.length === 0 ? (
-        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-          Aucun événement à venir
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map(event => (
-            <EventCard
-              key={event._id}
-              event={event}
-            />
-          ))}
+      )}
+
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        {events.map(event => (
+          <EventCard
+            key={event._id}
+            event={event}
+            onDelete={() => {
+              setEvents(events.filter(e => e._id !== event._id));
+            }}
+          />
+        ))}
+      </motion.div>
+
+      {events.length === 0 && !isLoading && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">
+            Aucun événement disponible
+          </p>
         </div>
       )}
 
       <CreateEventModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        onEventCreated={() => {
+          setIsCreateModalOpen(false);
+          loadEvents();
+        }}
       />
     </div>
   );

@@ -3,25 +3,31 @@ import EventList from '@/components/EventList';
 import Loading from '@/components/Loading';
 
 export const metadata = {
-  title: 'Accueil | Event Booking',
-  description: 'Découvrez et réservez vos événements',
+  title: 'Event Booking App',
+  description: 'Plateforme de réservation d\'événements'
 };
 
-export default function HomePage() {
+export default function Home() {
   return (
-    <div className="space-y-8">
-      <header className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          Découvrez nos événements
-        </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300">
-          Réservez vos places pour les meilleurs événements
-        </p>
-      </header>
+    <div>
+      {/* Hero Section */}
+      <div className="bg-primary-600 text-white py-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold mb-4">
+            Découvrez des événements incroyables
+          </h1>
+          <p className="text-xl mb-8">
+            Réservez vos places pour les meilleurs concerts, festivals et spectacles
+          </p>
+        </div>
+      </div>
 
-      <Suspense fallback={<Loading />}>
-        <EventList />
-      </Suspense>
+      {/* Liste des événements */}
+      <section className="container mx-auto px-4 py-8">
+        <Suspense fallback={<Loading />}>
+          <EventList />
+        </Suspense>
+      </section>
     </div>
   );
 } 

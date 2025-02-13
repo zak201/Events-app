@@ -1,32 +1,45 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const reservationSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event',
     required: true
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   seats: {
     type: Number,
     required: true,
-    min: 1,
-    max: 10
+    min: 1
   },
   status: {
     type: String,
-    enum: ['confirmed', 'cancelled'],
-    default: 'confirmed'
+    enum: ['pending', 'confirmed', 'cancelled'],
+    default: 'pending'
+  },
+  paymentIntentId: String,
+  validated: {
+    type: Boolean,
+    default: false
+  },
+  validatedAt: Date,
+  userDetails: {
+    firstName: String,
+    lastName: String,
+    email: String,
+    phone: String
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
 // Index pour améliorer les performances des requêtes
 reservationSchema.index({ eventId: 1, userId: 1 });
 
-module.exports = mongoose.models?.Reservation || mongoose.model('Reservation', reservationSchema); 
+export default mongoose.models.Reservation || mongoose.model('Reservation', reservationSchema); 

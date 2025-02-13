@@ -3,12 +3,20 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { eventSchema } from '@/lib/validations/event';
+import { z } from 'zod';
 import { createEvent } from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import Modal from './Modal';
+import Modal from '@/components/Modal';
 import Image from 'next/image';
-import { uploadImage } from '@/lib/uploadImage';
+
+// Schéma Zod avec conversion de capacité
+const eventSchema = z.object({
+  title: z.string().nonempty({ message: "Le titre est requis" }),
+  date: z.string().nonempty({ message: "La date est requise" }),
+  location: z.string().nonempty({ message: "Le lieu est requis" }),
+  capacity: z.preprocess((val) => parseInt(val, 10), z.number().min(1, { message: "La capacité doit être d'au moins 1" })),
+  description: z.string().optional(),
+});
 
 export default function CreateEventModal({ isOpen, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,36 +25,54 @@ export default function CreateEventModal({ isOpen, onClose }) {
     defaultValues: {
       capacity: 1
     },
-    mode: 'onChange' // Validation en temps réel
+    mode: 'onChange'
   });
 
+  const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [isValidImage, setIsValidImage] = useState(false);
+  const [imageError, setImageError] = useState('');
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const imageURL = URL.createObjectURL(file);
+      setImageUrl(imageURL);
       setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      setIsValidImage(true);
+      setImageError('');
     }
   };
 
   const onSubmit = async (data) => {
     try {
       setIsSubmitting(true);
+      console.log('Données à envoyer:', data);
+      console.log('Type de createEvent:', typeof createEvent);
 
-      let imageUrl = null;
-      if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
+      if (!imageFile || !isValidImage) {
+        setImageError('Une image valide est requise');
+        setIsSubmitting(false);
+        return;
       }
 
-      await createEvent({
-        ...data,
-        imageUrl,
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+      formData.append('image', imageFile);
+
+      await createEvent(formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       toast.success('Événement créé avec succès');
       reset();
+      setImageUrl('');
+      setImageFile(null);
+      setIsValidImage(false);
       onClose();
       window.location.reload();
     } catch (error) {
@@ -62,105 +88,50 @@ export default function CreateEventModal({ isOpen, onClose }) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label htmlFor="title" className="label">Titre</label>
-          <input
-            {...register('title')}
-            type="text"
-            id="title"
-            className="input"
-          />
-          {errors.title && (
-            <p className="error">{errors.title.message}</p>
-          )}
+          <input {...register('title')} type="text" id="title" className="input" />
+          {errors.title && <p className="error">{errors.title.message}</p>}
         </div>
 
         <div>
           <label htmlFor="date" className="label">Date</label>
-          <input
-            {...register('date')}
-            type="datetime-local"
-            id="date"
-            className="input"
-          />
-          {errors.date && (
-            <p className="error">{errors.date.message}</p>
-          )}
+          <input {...register('date')} type="datetime-local" id="date" className="input" />
+          {errors.date && <p className="error">{errors.date.message}</p>}
         </div>
 
         <div>
           <label htmlFor="location" className="label">Lieu</label>
-          <input
-            {...register('location')}
-            type="text"
-            id="location"
-            className="input"
-          />
-          {errors.location && (
-            <p className="error">{errors.location.message}</p>
-          )}
+          <input {...register('location')} type="text" id="location" className="input" />
+          {errors.location && <p className="error">{errors.location.message}</p>}
         </div>
 
         <div>
           <label htmlFor="capacity" className="label">Capacité</label>
-          <input
-            {...register('capacity')}
-            type="number"
-            id="capacity"
-            min="1"
-            className="input"
-          />
-          {errors.capacity && (
-            <p className="error">{errors.capacity.message}</p>
-          )}
+          <input {...register('capacity')} type="number" id="capacity" min="1" className="input" />
+          {errors.capacity && <p className="error">{errors.capacity.message}</p>}
         </div>
 
         <div>
           <label htmlFor="description" className="label">Description</label>
-          <textarea
-            {...register('description')}
-            id="description"
-            className="input"
-            rows={4}
-          />
-          {errors.description && (
-            <p className="error">{errors.description.message}</p>
-          )}
+          <textarea {...register('description')} id="description" className="input" rows={4} />
+          {errors.description && <p className="error">{errors.description.message}</p>}
         </div>
 
         <div>
-          <label htmlFor="image" className="label">Image</label>
-          <input
-            type="file"
-            id="image"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="input"
-          />
-          {imagePreview && (
-            <div className="mt-2 relative h-40 w-full">
-              <Image
-                src={imagePreview}
-                alt="Preview"
-                fill
-                className="object-cover rounded"
-              />
+          <label htmlFor="image" className="label">Image de l'événement</label>
+          <input type="file" id="image" accept="image/*" className="input" onChange={handleImageChange} />
+          {imageError && <p className="text-red-500 text-sm mt-1">{imageError}</p>}
+          {imageUrl && isValidImage && (
+            <div className="relative h-48 w-full mt-2 rounded-lg overflow-hidden">
+              <Image src={imageUrl} alt="Prévisualisation" fill className="object-cover" />
             </div>
           )}
         </div>
 
         <div className="flex justify-end space-x-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-secondary"
-            disabled={isSubmitting}
-          >
+          <button type="button" onClick={onClose} className="btn btn-secondary" disabled={isSubmitting}>
             Annuler
           </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || !isValid}
-            className="btn btn-primary relative"
-          >
+          <button type="submit" disabled={isSubmitting || !isValid} className="btn btn-primary relative">
             {isSubmitting ? (
               <>
                 <span className="opacity-0">Créer</span>
@@ -173,13 +144,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
             )}
           </button>
         </div>
-
-        {Object.keys(errors).length > 0 && (
-          <div className="text-red-500 text-sm mt-2">
-            Veuillez corriger les erreurs dans le formulaire
-          </div>
-        )}
       </form>
     </Modal>
   );
-} 
+}
