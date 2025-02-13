@@ -23,6 +23,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
@@ -49,7 +50,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased min-h-screen;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -57,82 +58,77 @@
 
   /* Amélioration de la lisibilité des textes */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight text-gray-900 dark:text-gray-100;
+    @apply text-foreground font-semibold tracking-tight;
   }
 
   p {
-    @apply text-gray-700 dark:text-gray-300;
+    @apply text-muted-foreground;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
-}
 
-.loading-spinner {
-  @apply animate-spin h-5 w-5 text-white;
-}
-
-.btn {
-  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
-}
-
-.btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700 
-         px-4 py-2 rounded-lg font-medium 
-         transition-colors duration-200
-         inline-flex items-center justify-center
-         disabled:opacity-50 disabled:cursor-not-allowed
-         z-10 relative;
-}
-
-.btn-secondary {
-  @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
-}
-
-.btn-disabled {
-  @apply bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400;
-}
-
-.input {
-  @apply w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-600;
-}
-
-.label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
-}
-
-.error {
-  @apply text-red-500 text-sm mt-1;
-}
-
-.card {
-  @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl 
-         transition-all duration-300;
-}
-
-/* Classes spécifiques pour le texte en mode sombre */
-.dark .text-gray-600 {
-  @apply text-gray-300;
-}
-
-.dark .text-gray-700 {
-  @apply text-gray-200;
-}
-
-.dark .text-gray-800 {
-  @apply text-gray-100;
-}
-
-.dark .text-gray-900 {
-  @apply text-white;
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass {
+    @apply bg-background/70 backdrop-blur-lg 
+           border border-border/20 
+           rounded-2xl shadow-lg;
+  }
+
+  .card {
+    @apply glass transition-all duration-300 
+           hover:shadow-xl hover:-translate-y-1
+           dark:hover:shadow-primary/5;
+  }
+
+  .heading-1 {
+    @apply text-4xl font-bold tracking-tight 
+           sm:text-5xl md:text-6xl;
+  }
+
+  .heading-2 {
+    @apply text-3xl font-semibold tracking-tight 
+           sm:text-4xl;
+  }
+
+  .input-search {
+    @apply w-full px-6 py-4 rounded-full 
+           bg-background/90
+           text-foreground
+           placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 
+           focus:ring-ring
+           border border-input;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium 
+           transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground 
+           hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground
+           hover:bg-secondary/80;
+  }
+
   .modal-overlay {
-    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50;
+    @apply fixed inset-0 bg-background/80 backdrop-blur-sm z-50;
   }
 
   .modal-container {
@@ -140,17 +136,17 @@
   }
 
   .modal-content {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-2xl 
+    @apply bg-background text-foreground
+           rounded-xl shadow-2xl 
            w-full max-w-md relative
-           border border-gray-200 dark:border-gray-700;
+           border border-border;
   }
 
   .modal-close-button {
     @apply absolute top-4 right-4 p-2 rounded-full 
-           text-gray-500 hover:text-gray-700 
-           dark:text-gray-400 dark:hover:text-gray-200 
+           text-muted-foreground hover:text-foreground
            transition-colors
-           hover:bg-gray-100 dark:hover:bg-gray-700;
+           hover:bg-secondary/80;
   }
 
   .form-group {
@@ -158,21 +154,28 @@
   }
 
   .form-label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+    @apply block text-sm font-medium text-foreground mb-1;
   }
 
   .form-input {
-    @apply w-full rounded-lg border border-gray-300 dark:border-gray-600
-           bg-white dark:bg-gray-700 px-3 py-2
-           focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full rounded-lg 
+           border border-input
+           bg-background
+           px-3 py-2
+           focus:ring-2 focus:ring-ring focus:border-transparent
+           transition-colors duration-200;
   }
 
   .form-error {
-    @apply text-sm text-red-600 dark:text-red-400 mt-1;
+    @apply text-destructive text-sm mt-1;
   }
 
   .input {
-    @apply w-full px-4 py-2 rounded-lg border border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-4 py-2 rounded-lg 
+           border border-input 
+           bg-background
+           focus:ring-2 focus:ring-ring 
+           focus:border-transparent;
   }
 
   /* Ajouter un style spécifique pour le select */
@@ -189,20 +192,25 @@
   .error {
     @apply text-red-500 text-sm mt-1;
   }
+}
 
-  .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 
-           px-4 py-2 rounded-lg font-medium 
-           transition-colors duration-200
-           inline-flex items-center justify-center
-           disabled:opacity-50 disabled:cursor-not-allowed
-           z-10 relative;
-  }
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 
-           dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
-  }
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Optimisations pour le mode sombre */
+.dark .glass {
+  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dark .card:hover {
+  box-shadow: 0 4px 20px 0 rgba(var(--primary), 0.1);
 }
 
 /* Appliquer les polices une fois chargées */

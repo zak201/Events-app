@@ -1,6 +1,6 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
-import { Providers } from '@/components/Providers';
+import { Providers } from '@/components/providers';
 import Navbar from '@/components/Navbar';
 import { Toaster } from 'react-hot-toast';
 import { Suspense } from 'react';
@@ -11,15 +11,24 @@ import PerformanceMetrics from '@/components/common/PerformanceMetrics';
 import FontLoader from '@/components/common/FontLoader';
 import { markPerformance, PERFORMANCE_MARKS } from '@/lib/metrics';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  title: {
-    default: 'Event Booking App',
-    template: '%s | Event Booking'
+  title: 'EventBooking',
+  description: 'Réservez vos places pour les meilleurs concerts, festivals et spectacles',
+  keywords: 'événements, concerts, festivals, spectacles, réservation, billets',
+  authors: [{ name: 'EventBooking' }],
+  creator: 'EventBooking',
+  publisher: 'EventBooking',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
   },
-  description: 'Plateforme de réservation d\'événements',
 };
 
 export default function RootLayout({ children }) {
@@ -27,8 +36,12 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="fr" suppressHydrationWarning>
-      <head />
-      <body className={inter.className}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#000000" />
+        <link rel="icon" href="/favicon.ico" />
+      </head>
+      <body className={`${inter.className} antialiased`}>
         <Suspense fallback={null}>
           <ErrorMonitor />
           <FontLoader />
