@@ -17,7 +17,7 @@ Une application moderne de gestion d'événements et de réservation de billets 
 
 - Node.js 18+
 - MongoDB
-- Compte Stripe
+- Compte Stripe // à mettre en place 
 - Compte Resend (pour les emails)
 - Compte Cloudinary (pour les images)
 
@@ -372,31 +372,6 @@ export const authOptions = {
 - Code splitting automatique
 - Lazy loading des composants
 
-### Workflow de Développement
-
-1. **Création d'événement**:
-```javascript
-// Validation
-const eventSchema = z.object({...})
-
-// Upload image
-const imageUrl = await uploadImage(file)
-
-// Création en DB
-await Event.create({...data, imageUrl})
-```
-
-2. **Réservation**:
-```javascript
-// Vérification disponibilité
-const event = await Event.findById(eventId)
-if (event.reservedSeats + seats > event.capacity) {
-  throw new Error('Complet')
-}
-
-// Création réservation
-await Reservation.create({...})
-```
 
 ### Tests et Qualité
 

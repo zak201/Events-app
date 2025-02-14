@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
+import Image from 'next/image';
 
 export default function ReservationList() {
   const [reservations, setReservations] = useState([]);
@@ -105,6 +106,50 @@ export default function ReservationList() {
     }
   };
 
+  const renderEventDetails = (reservation) => {
+    // Vérifier si l'événement existe
+    if (!reservation.eventId) {
+      return (
+        <div className="p-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Événement non disponible ou supprimé
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-xl font-semibold mb-2">
+              {reservation.eventId.title}
+            </h3>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {format(new Date(reservation.eventId.date), 'PPP à HH:mm', { locale: fr })}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span>{reservation.eventId.location}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                <span>{reservation.seats} place(s)</span>
+              </div>
+            </div>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(reservation.status)}`}>
+            {getStatusText(reservation.status)}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {reservations?.map((reservation) => (
@@ -112,59 +157,53 @@ export default function ReservationList() {
           key={reservation._id}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
         >
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-semibold mb-2">
-                  {reservation.eventId.title}
-                </h3>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-300">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {format(new Date(reservation.eventId.date), 'PPP à HH:mm', { locale: fr })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>{reservation.eventId.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>{reservation.seats} place(s)</span>
-                  </div>
-                </div>
+          {/* Image de l'événement */}
+          <div className="relative h-48 w-full">
+            {reservation.eventId ? (
+              <Image
+                src={reservation.eventId.imageUrl || '/images/default-event.jpg'}
+                alt={reservation.eventId.title || 'Image de l\'événement'}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                <span className="text-gray-400 dark:text-gray-500">
+                  Image non disponible
+                </span>
               </div>
-              <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(reservation.status)}`}>
-                {getStatusText(reservation.status)}
-              </span>
-            </div>
+            )}
+          </div>
 
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Réservé pour</p>
-                  <p className="font-medium">
-                    {reservation.firstName} {reservation.lastName}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {reservation.email}
-                  </p>
-                </div>
-                <div className="flex justify-end items-center gap-4">
+          {renderEventDetails(reservation)}
+
+          <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Réservé pour</p>
+                <p className="font-medium">
+                  {reservation.firstName} {reservation.lastName}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {reservation.email}
+                </p>
+              </div>
+              <div className="flex justify-end items-center gap-4">
+                {reservation.eventId && (
                   <ReservationPDF 
                     reservation={reservation} 
-                    event={reservation.eventId} 
+                    event={reservation.eventId}
                   />
-                  {reservation.status !== 'cancelled' && (
-                    <button
-                      onClick={() => handleCancelReservation(reservation._id)}
-                      className="btn btn-danger"
-                    >
-                      Annuler
-                    </button>
-                  )}
-                </div>
+                )}
+                {reservation.status !== 'cancelled' && (
+                  <button
+                    onClick={() => handleCancelReservation(reservation._id)}
+                    className="btn btn-danger"
+                  >
+                    Annuler
+                  </button>
+                )}
               </div>
             </div>
           </div>

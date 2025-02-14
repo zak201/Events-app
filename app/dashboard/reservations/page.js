@@ -22,14 +22,15 @@ export default async function ReservationsPage() {
   const serializedReservations = reservations.map(reservation => ({
     ...reservation,
     _id: reservation._id.toString(),
-    eventId: {
-      ...reservation.eventId,
-      _id: reservation.eventId._id.toString(),
-      id: reservation.eventId._id.toString()
-    },
     userId: reservation.userId.toString(),
+    eventId: reservation.eventId ? {
+      ...reservation.eventId,
+      _id: reservation.eventId._id?.toString(),
+      organizerId: reservation.eventId.organizerId?.toString()
+    } : null,
     createdAt: reservation.createdAt?.toISOString(),
-    updatedAt: reservation.updatedAt?.toISOString()
+    updatedAt: reservation.updatedAt?.toISOString(),
+    validatedAt: reservation.validatedAt?.toISOString()
   }));
 
   return (
