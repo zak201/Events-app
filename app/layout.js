@@ -1,6 +1,6 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
-import { Providers } from '@/components/providers';
+import { Providers } from '@/components/Providers';
 import Navbar from '@/components/Navbar';
 import { Toaster } from 'react-hot-toast';
 import { Suspense } from 'react';

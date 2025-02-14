@@ -1,77 +1,53 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
+import clientPromise from '@/lib/mongodb';
 import { dbConnect } from '@/lib/dbConnect';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
 export const authOptions = {
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Mot de passe', type: 'password' }
+        email: { label: "Email", type: "email" },
+        password: { label: "Mot de passe", type: "password" }
       },
       async authorize(credentials) {
         try {
           await dbConnect();
-          
-          const user = await User.findOne({ 
-            email: credentials.email.toLowerCase() 
-          }).select('+password');
+          const user = await User.findOne({ email: credentials.email });
           
           if (!user) {
-            console.log('Utilisateur non trouvé');
-            return null;
+            throw new Error('Email ou mot de passe incorrect');
           }
 
-          const isValid = user.password === credentials.password;
+          const isValid = await bcrypt.compare(credentials.password, user.password);
           
-          console.log('Debug auth:', {
-            providedPassword: credentials.password,
-            storedPassword: user.password,
-            isValid
-          });
-
           if (!isValid) {
-            console.log('Mot de passe invalide');
-            return null;
+            throw new Error('Email ou mot de passe incorrect');
           }
-
-          console.log('Utilisateur authentifié:', {
-            id: user._id,
-            email: user.email,
-            role: user.role
-          });
 
           return {
             id: user._id.toString(),
-            email: user.email,
             name: user.name,
-            role: user.role
+            email: user.email,
+            role: user.role,
           };
         } catch (error) {
-          console.error('Erreur d\'authentification:', error);
-          return null;
+          console.error('Erreur authentification:', error);
+          throw error;
         }
       }
     })
   ],
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60 // 30 jours
-  },
-  pages: {
-    signIn: '/auth/login',
-    error: '/auth/error'
-  },
-  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;
-        console.log('JWT callback - token mis à jour:', token);
       }
       return token;
     },
@@ -79,12 +55,20 @@ export const authOptions = {
       if (token) {
         session.user.role = token.role;
         session.user.id = token.id;
-        console.log('Session callback - session mise à jour:', session);
       }
+      console.log('Session callback - session mise à jour:', session);
       return session;
     }
   },
-  debug: true,
+  pages: {
+    signIn: '/auth/login',
+    error: '/auth/error',
+  },
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 jours
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

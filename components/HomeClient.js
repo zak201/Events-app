@@ -1,13 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import EventList from './EventList';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function HomeClient() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setIsSearching(true);
+    
+    // Mettre à jour l'URL avec le terme de recherche
+    const params = new URLSearchParams();
+    if (searchQuery) {
+      params.set('q', searchQuery);
+    }
+    router.push(`/?${params.toString()}`);
+  };
 
   return (
     <div className="min-h-screen pb-20">
@@ -50,16 +66,22 @@ export default function HomeClient() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="max-w-xl mx-auto"
           >
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
                 placeholder="Rechercher un événement..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-search"
+                className="input-search pr-12"
               />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 h-6 w-6" />
-            </div>
+              <button
+                type="submit"
+                className="absolute right-0 top-0 h-full px-4 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                disabled={isSearching}
+              >
+                <Search className="h-6 w-6" />
+              </button>
+            </form>
           </motion.div>
         </div>
       </section>

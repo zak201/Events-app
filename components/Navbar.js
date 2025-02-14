@@ -4,8 +4,10 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { Sun, Moon, Menu, X, User, LogOut } from 'lucide-react';
+import { Sun, Moon, Menu, X, User, LogOut, Calendar } from 'lucide-react';
 import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import UserMenu from './UserMenu';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,81 +51,13 @@ export default function Navbar() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Thème */}
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-
-            {/* Menu utilisateur */}
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            
             {session?.user ? (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <span className="hidden sm:block">{session.user.name}</span>
-                  <User className="w-5 h-5" />
-                </button>
-
-                {/* Menu déroulant utilisateur */}
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-[60]">
-                    {/* Profil utilisateur */}
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <User className="w-10 h-10 p-2 bg-gray-100 dark:bg-gray-700 rounded-full" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {session.user.name}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {session.user.email}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                            {session.user.role}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Liens du menu */}
-                    <Link
-                      href="/dashboard/reservations"
-                      className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>Mes réservations</span>
-                      </div>
-                    </Link>
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <LogOut className="w-4 h-4" />
-                        <span>Se déconnecter</span>
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <UserMenu user={session.user} />
             ) : (
-              <Link
-                href="/auth/login"
-                className="btn btn-primary"
-              >
+              <Link href="/auth/login" className="btn btn-primary">
                 Connexion
               </Link>
             )}

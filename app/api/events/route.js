@@ -2,11 +2,12 @@ import { withApiHandler } from '@/lib/api/withHandler';
 import { dbConnect } from '@/lib/dbConnect';
 import Event from '@/models/Event';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { eventSchema } from '@/lib/validations/event';
 import path from 'path';
 import { writeFile, mkdir } from 'fs/promises';
+import { uploadImage } from '@/lib/uploadImage';
 
 // Fonction utilitaire pour sérialiser les documents MongoDB
 function serializeDocument(doc) {
@@ -47,7 +48,8 @@ export const config = {
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.role === 'organisateur') {
+    
+    if (!session || session.user.role !== 'organisateur') {
       return NextResponse.json(
         { message: 'Non autorisé' },
         { status: 401 }
@@ -55,20 +57,42 @@ export async function POST(request) {
     }
 
     await dbConnect();
-    const body = await request.json();
-    const validatedData = eventSchema.parse(body);
 
-    const event = new Event({
-      ...validatedData,
+    const formData = await request.formData();
+    let imageUrl = null;
+
+    // Gestion de l'upload d'image
+    const imageFile = formData.get('image');
+    if (imageFile) {
+      try {
+        imageUrl = await uploadImage(imageFile);
+      } catch (error) {
+        console.error('Erreur upload image:', error);
+        return NextResponse.json(
+          { message: 'Erreur lors de l\'upload de l\'image' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const eventData = {
+      title: formData.get('title'),
+      date: formData.get('date'),
+      location: formData.get('location'),
+      capacity: parseInt(formData.get('capacity')),
+      description: formData.get('description'),
+      imageUrl,
       organizerId: session.user.id,
       reservedSeats: 0
-    });
+    };
 
-    await event.save();
-    return NextResponse.json(event, { status: 201 });
+    const event = await Event.create(eventData);
+
+    return NextResponse.json(event);
   } catch (error) {
+    console.error('Erreur création événement:', error);
     return NextResponse.json(
-      { message: 'Erreur lors de la création de l\'événement' },
+      { message: `Erreur lors de la création: ${error.message}` },
       { status: 500 }
     );
   }

@@ -2,9 +2,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { dbConnect } from '@/lib/dbConnect';
 import Event from '@/models/Event';
-import ReservationForm from '@/components/ReservationForm';
 import { notFound, redirect } from 'next/navigation';
 import StripeWrapper from '@/components/StripeWrapper';
+import { Types } from 'mongoose';
 
 export default async function ReservePage({ params }) {
   const session = await getServerSession(authOptions);
@@ -14,6 +14,12 @@ export default async function ReservePage({ params }) {
   }
 
   await dbConnect();
+
+  // Vérifier si l'ID est valide
+  if (!Types.ObjectId.isValid(params.id)) {
+    notFound();
+  }
+
   const event = await Event.findById(params.id)
     .populate('organizerId', 'name email')
     .lean();

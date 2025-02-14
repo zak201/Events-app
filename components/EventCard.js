@@ -24,6 +24,7 @@ const EventCard = ({ event }) => {
 
   const isOrganizer = session?.user?.role === 'organisateur';
   const isFullyBooked = event.reservedSeats >= event.capacity;
+  const isEventPassed = new Date(event.date) < new Date();
 
   // Animation pour l'entrée des cartes
   const cardVariants = {
@@ -36,121 +37,137 @@ const EventCard = ({ event }) => {
   };
 
   // S'assurer que l'ID est au bon format
-  const eventId = event._id?.toString() || event.id?.toString();
+  const eventId = event._id?.toString();
 
   const handleReserveClick = () => {
     if (!session) {
-      setIsLoginPromptOpen(true);
+      router.push(`/auth/login?callbackUrl=/events/${eventId}/reserve`);
     } else {
-      setIsReservationModalOpen(true);
+      router.push(`/events/${eventId}/reserve`);
     }
   };
 
+  const handleEditSuccess = () => {
+    setIsEditModalOpen(false);
+    router.refresh();
+  };
+
   return (
-    <motion.div
-      variants={cardVariants}
-      initial="hidden"
-      animate="visible"
-      whileHover={{ y: -5 }}
-      className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-    >
-      {/* Image de couverture avec effet de zoom au hover */}
-      <div className="relative h-48 overflow-hidden">
-        <Image
-          src={event.imageUrl || '/images/default-event.jpg'}
-          alt={event.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      </div>
+    <>
+      <motion.div
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        whileHover={{ y: -5 }}
+        className="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+      >
+        {/* Image de couverture avec effet de zoom au hover */}
+        <div className="relative h-48 overflow-hidden">
+          <Image
+            src={event.imageUrl || '/images/default-event.jpg'}
+            alt={event.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        </div>
 
-      {/* Contenu de la carte */}
-      <div className="p-4">
-        <h3 className="text-xl font-bold mb-2 line-clamp-2">{event.title}</h3>
-        
-        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4" />
-            <span>{formatDate(event.date)}</span>
-          </div>
+        {/* Contenu de la carte */}
+        <div className="p-4">
+          <h3 className="text-xl font-bold mb-2 line-clamp-2">{event.title}</h3>
           
-          <div className="flex items-center gap-2">
-            <MapPinIcon className="w-4 h-4" />
-            <span>{event.location}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <UsersIcon className="w-4 h-4" />
-            <span>
-              {event.capacity - event.reservedSeats} places disponibles
-            </span>
-          </div>
-        </div>
-
-        <div className="flex gap-2 mt-4">
-          {/* Bouton Détails */}
-          <Link 
-            href={`/events/${eventId}`}
-            className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
-          >
-            <InfoIcon className="w-4 h-4" />
-            Détails
-          </Link>
-
-          {/* Bouton Réserver */}
-          {!isOrganizer && (
-            <button
-              onClick={() => session ? setIsReservationModalOpen(true) : setIsLoginPromptOpen(true)}
-              className="btn btn-primary flex-1"
-              disabled={isFullyBooked}
-            >
-              {isFullyBooked ? 'Complet' : 'Réserver'}
-            </button>
-          )}
-
-          {/* Boutons d'administration pour les organisateurs */}
-          {isOrganizer && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="btn btn-secondary"
-              >
-                Modifier
-              </button>
-              <DeleteEventButton 
-                eventId={event.id} 
-                onDelete={() => router.refresh()}
-              />
+          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              <span>{format(new Date(event.date), 'PPP à HH:mm', { locale: fr })}</span>
             </div>
-          )}
+            
+            <div className="flex items-center gap-2">
+              <MapPinIcon className="w-4 h-4" />
+              <span>{event.location}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <UsersIcon className="w-4 h-4" />
+              <span>
+                {event.capacity - event.reservedSeats} places disponibles
+              </span>
+            </div>
+          </div>
+
+          {/* Conteneur des boutons avec espacement et tailles uniformes */}
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            <Link 
+              href={`/events/${eventId}`}
+              className="btn btn-secondary flex items-center justify-center gap-2 h-10 px-4"
+            >
+              <InfoIcon className="w-4 h-4" />
+              <span>Détails</span>
+            </Link>
+
+            {isOrganizer ? (
+              <>
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="btn btn-secondary flex items-center justify-center gap-2 h-10 px-4"
+                >
+                  Modifier
+                </button>
+                <DeleteEventButton 
+                  eventId={eventId} 
+                  onDelete={() => router.refresh()}
+                  className="btn btn-danger flex items-center justify-center gap-2 h-10 px-4"
+                />
+              </>
+            ) : (
+              <button
+                onClick={handleReserveClick}
+                disabled={isFullyBooked || isEventPassed}
+                className={`btn ${
+                  isFullyBooked || isEventPassed
+                    ? 'btn-disabled'
+                    : 'btn-primary'
+                } col-span-2 flex items-center justify-center h-10 px-4`}
+              >
+                {isFullyBooked 
+                  ? 'Complet' 
+                  : isEventPassed 
+                    ? 'Terminé' 
+                    : 'Réserver'}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {isOrganizer && (
-        <EditEventModal
+        {/* Modal de modification */}
+        {isEditModalOpen && (
+          <EditEventModal
+            event={event}
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onEventUpdated={() => {
+              setIsEditModalOpen(false);
+              router.refresh();
+            }}
+          />
+        )}
+
+        <ReservationModal
+          isOpen={isReservationModalOpen}
+          onClose={() => setIsReservationModalOpen(false)}
           event={event}
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onEventUpdated={() => window.location.reload()}
         />
-      )}
 
-      <ReservationModal
-        isOpen={isReservationModalOpen}
-        onClose={() => setIsReservationModalOpen(false)}
-        event={event}
-      />
-
-      {isLoginPromptOpen && (
-        <LoginPromptModal
-          isOpen={isLoginPromptOpen}
-          onClose={() => setIsLoginPromptOpen(false)}
-          onLogin={() => router.push('/auth/login')}
-          onSignup={() => router.push('/auth/register')}
-        />
-      )}
-    </motion.div>
+        {isLoginPromptOpen && (
+          <LoginPromptModal
+            isOpen={isLoginPromptOpen}
+            onClose={() => setIsLoginPromptOpen(false)}
+            onLogin={() => router.push('/auth/login')}
+            onSignup={() => router.push('/auth/register')}
+          />
+        )}
+      </motion.div>
+    </>
   );
 };
 

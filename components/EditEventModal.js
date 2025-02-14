@@ -1,23 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
 import { CldUploadWidget } from 'next-cloudinary';
+import { useOnClickOutside } from '@/hooks/useOnClickOutside';
+import { toast } from 'react-hot-toast';
 
 const eventSchema = z.object({
   title: z.string().min(1, 'Le titre est requis'),
   date: z.string().min(1, 'La date est requise'),
   location: z.string().min(1, 'Le lieu est requis'),
   description: z.string().min(1, 'La description est requise'),
+  capacity: z.preprocess(
+    (val) => parseInt(val, 10), 
+    z.number().min(1, 'La capacité doit être d\'au moins 1 personne')
+  ),
 });
 
 export default function EditEventModal({ event, isOpen, onClose, onEventUpdated }) {
+  const modalRef = useRef(null);
   const [imageUrl, setImageUrl] = useState(event.imageUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useOnClickOutside(modalRef, onClose);
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(eventSchema),
@@ -26,6 +35,7 @@ export default function EditEventModal({ event, isOpen, onClose, onEventUpdated 
       date: new Date(event.date).toISOString().slice(0, 16),
       location: event.location,
       description: event.description,
+      capacity: event.capacity,
     },
   });
 
@@ -54,10 +64,10 @@ export default function EditEventModal({ event, isOpen, onClose, onEventUpdated 
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="modal-overlay" onClick={onClose} />
+    <div className="fixed inset-0 z-50">
+      <div className="modal-overlay" />
       <div className="modal-container">
-        <div className="modal-content">
+        <div ref={modalRef} className="modal-content">
           <button 
             onClick={onClose}
             className="modal-close-button"
@@ -110,6 +120,19 @@ export default function EditEventModal({ event, isOpen, onClose, onEventUpdated 
               />
               {errors.location && (
                 <p className="form-error">{errors.location.message}</p>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Nombre de places</label>
+              <input
+                type="number"
+                min="1"
+                {...register('capacity')}
+                className="form-input"
+              />
+              {errors.capacity && (
+                <p className="form-error">{errors.capacity.message}</p>
               )}
             </div>
 
@@ -180,6 +203,6 @@ export default function EditEventModal({ event, isOpen, onClose, onEventUpdated 
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 } 

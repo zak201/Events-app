@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import EventCard from './EventCard';
-import EventSearch from './EventSearch';
 import CreateEventModal from './CreateEventModal';
 import { useSession } from 'next-auth/react';
 import { fetchEvents } from '@/lib/api';
 import Loading from './Loading';
 import ErrorMessage from './ErrorMessage';
 
-export default function EventList() {
+export default function EventList({ searchQuery = '' }) {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,12 +34,24 @@ export default function EventList() {
     loadEvents();
   }, []);
 
+  // Filtrer les événements en fonction de la recherche
+  const filteredEvents = events.filter(event => {
+    const searchTerms = searchQuery.toLowerCase().trim();
+    if (!searchTerms) return true;
+
+    return (
+      event.title.toLowerCase().includes(searchTerms) ||
+      event.description.toLowerCase().includes(searchTerms) ||
+      event.location.toLowerCase().includes(searchTerms) ||
+      event.category?.toLowerCase().includes(searchTerms)
+    );
+  });
+
   if (isLoading) return <Loading />;
+  if (error) return <ErrorMessage message={error} />;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <EventSearch onSearch={loadEvents} />
-
+    <div className="container mx-auto px-4">
       {session?.user?.role === 'organisateur' && (
         <div className="mb-6 flex justify-end">
           <button
@@ -52,26 +63,30 @@ export default function EventList() {
         </div>
       )}
 
-      {error && <ErrorMessage message={error} />}
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {events.map(event => (
-          <EventCard
-            key={event._id}
-            event={event}
-            isOrganizer={session?.user?.role === 'organisateur'}
-            onDelete={loadEvents}
-          />
-        ))}
-      </motion.div>
-
-      {events.length === 0 && !isLoading && !error && (
+      {filteredEvents.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.map((event) => (
+            <motion.div
+              key={event._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <EventCard
+                event={event}
+                isOrganizer={session?.user?.role === 'organisateur'}
+                onDelete={loadEvents}
+              />
+            </motion.div>
+          ))}
+        </div>
+      ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500">Aucun événement disponible pour le moment</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            {searchQuery 
+              ? `Aucun événement ne correspond à "${searchQuery}"`
+              : "Aucun événement disponible pour le moment."}
+          </p>
         </div>
       )}
 

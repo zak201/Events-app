@@ -1,0 +1,60 @@
+/* Ajout des styles pour la modale */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50;
+}
+
+.modal-container {
+  @apply fixed inset-0 flex items-center justify-center z-50 p-4;
+}
+
+.modal-content {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative;
+}
+
+.modal-close-button {
+  @apply absolute right-4 top-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 
+         transition-colors duration-200;
+}
+
+.modal-header {
+  @apply mb-6 pr-8;
+}
+
+/* Ajouter ces styles pour le menu */
+.menu-item {
+  @apply flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 
+         hover:bg-gray-100 dark:hover:bg-gray-700/50 w-full transition-colors duration-200;
+}
+
+.menu-section-title {
+  @apply text-xs font-medium text-gray-400 dark:text-gray-500 px-3 py-1;
+}
+
+.menu-divider {
+  @apply border-t border-gray-200 dark:border-gray-700 my-1;
+}
+
+/* Styles pour les boutons */
+.btn {
+  @apply font-medium rounded-lg transition-colors duration-200 
+         flex items-center justify-center min-w-[100px];
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 
+         disabled:bg-blue-300 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 hover:bg-gray-300 
+         dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+.btn-disabled {
+  @apply bg-gray-300 text-gray-500 cursor-not-allowed 
+         dark:bg-gray-700 dark:text-gray-400;
+} 
