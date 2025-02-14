@@ -1,83 +1,91 @@
 # Events App
 
-Une application moderne de gestion d'événements et de réservation de billets construite avec Next.js 14.
+Une application web de gestion d'événements et de réservations construite avec Next.js 14.
 
-## Fonctionnalités
+## 🚀 Fonctionnalités
 
-- 🎫 Création et gestion d'événements
-- 🔒 Authentification avec NextAuth.js
-- 💳 Paiement sécurisé avec Stripe
-- 📱 Interface responsive
-- 🎨 Thème clair/sombre
-- 📧 Notifications par email
-- 🎟️ Génération de billets PDF avec QR code
-- 📱 Validation des billets par scan
+- 👥 Authentification utilisateur (NextAuth.js)
+- 📅 Création et gestion d'événements
+- 🎟️ Système de réservation avec QR codes
+- 📧 Notifications par email (Resend)
+- 🎨 Interface adaptative (dark/light mode)
+- 📱 Design responsive
+- 🔒 Rôles utilisateur (organisateur/participant)
 
-## Prérequis
+## 🛠️ Technologies
+
+- **Framework**: Next.js 14
+- **Base de données**: MongoDB avec Mongoose
+- **Authentification**: NextAuth.js
+- **Styles**: Tailwind CSS
+- **Emails**: Resend
+- **Paiements**: Stripe (à venir)
+- **PDF**: @react-pdf/renderer
+- **QR Codes**: qrcode (à venir)
+
+## 🚦 Prérequis
 
 - Node.js 18+
 - MongoDB
-- Compte Stripe // à mettre en place 
-- Compte Resend (pour les emails)
-- Compte Cloudinary (pour les images)
+- Compte Stripe
+- Compte Resend
 
-## Installation
+## ⚙️ Configuration
 
-1. Cloner le projet
+1. Clonez le repository
 ```bash
 git clone https://github.com/votre-username/events-app.git
-cd events-app
 ```
 
-2. Installer les dépendances
+2. Installez les dépendances
 ```bash
 npm install
 ```
+
+3. Créez un fichier `.env.local` avec les variables suivantes :
+```env
+# Base de données
+MONGODB_URI=
+
+# Auth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=
+
+# Email
+RESEND_API_KEY=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-4. Télécharger les polices pour les PDF
-```bash
-npm run setup
-```
-
-5. Lancer le projet en développement
+4. Lancez le serveur de développement
 ```bash
 npm run dev
 ```
 
-## Structure du projet
+## 📁 Structure du Projet
 
 ```
-├── app/                  # Routes et pages Next.js
-├── components/          # Composants React réutilisables
-├── lib/                 # Utilitaires et configurations
-├── models/             # Modèles Mongoose
-├── public/             # Fichiers statiques
-└── scripts/            # Scripts utilitaires
+events-app/
+├── app/                   # Routes et pages Next.js
+├── components/           # Composants React réutilisables
+├── lib/                  # Utilitaires et configurations
+├── models/              # Modèles Mongoose
+├── public/              # Assets statiques
+└── styles/              # Styles globaux
 ```
 
-## Déploiement
+## 🔐 Rôles Utilisateur
 
-1. Construire l'application
-```bash
-npm run build
-```
+- **Organisateur**: Peut créer/gérer des événements
+- **Participant**: Peut réserver des places
 
-2. Démarrer en production
-```bash
-npm start
-```
 
-## Configuration Stripe
-
-1. Créer un compte Stripe
-2. Ajouter les clés API dans `.env.local`
-3. Configurer le webhook Stripe :
-   ```bash
-   stripe listen --forward-to localhost:3000/api/webhooks/stripe
-   ```
 # EventBooking - Application de Gestion d'Événements
 
 ## 📖 Vue d'ensemble
@@ -194,7 +202,7 @@ RESEND_API_KEY=
 
 ## 🧪 Tests
 
-(Section à compléter avec les tests)
+(pas de tests pour le moment)
 
 ## 📈 Monitoring
 
@@ -205,7 +213,6 @@ RESEND_API_KEY=
 
 ## 📝 License
 
-MIT License
 
 # Documentation Technique EventBooking
 
@@ -393,3 +400,8 @@ npm run build
 npm start
 ```
 
+
+
+
+
+By ANOUAR Zakaria
