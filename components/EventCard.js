@@ -7,7 +7,7 @@ import Link from 'next/link';
 import DeleteEventButton from './DeleteEventButton';
 import { useState } from 'react';
 import EditEventModal from './EditEventModal';
-import { CalendarIcon, MapPinIcon, UsersIcon } from 'lucide-react';
+import { CalendarIcon, MapPinIcon, UsersIcon, InfoIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { formatDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -34,6 +34,9 @@ const EventCard = ({ event }) => {
       transition: { duration: 0.5 }
     }
   };
+
+  // S'assurer que l'ID est au bon format
+  const eventId = event._id?.toString() || event.id?.toString();
 
   const handleReserveClick = () => {
     if (!session) {
@@ -85,35 +88,43 @@ const EventCard = ({ event }) => {
           </div>
         </div>
 
-        {/* Bouton Réserver */}
-        <button
-          onClick={handleReserveClick}
-          disabled={isFullyBooked}
-          className={`btn w-full ${
-            isFullyBooked 
-              ? 'btn-disabled' 
-              : 'btn-primary'
-          }`}
-        >
-          {isFullyBooked ? 'Complet' : 'Réserver'}
-        </button>
-      </div>
+        <div className="flex gap-2 mt-4">
+          {/* Bouton Détails */}
+          <Link 
+            href={`/events/${eventId}`}
+            className="btn btn-secondary flex-1 flex items-center justify-center gap-2"
+          >
+            <InfoIcon className="w-4 h-4" />
+            Détails
+          </Link>
 
-      <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
-        {isOrganizer && (
-          <div className="space-x-2">
+          {/* Bouton Réserver */}
+          {!isOrganizer && (
             <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="btn btn-secondary"
+              onClick={() => session ? setIsReservationModalOpen(true) : setIsLoginPromptOpen(true)}
+              className="btn btn-primary flex-1"
+              disabled={isFullyBooked}
             >
-              Modifier
+              {isFullyBooked ? 'Complet' : 'Réserver'}
             </button>
-            <DeleteEventButton
-              eventId={event._id}
-              onDelete={() => window.location.reload()}
-            />
-          </div>
-        )}
+          )}
+
+          {/* Boutons d'administration pour les organisateurs */}
+          {isOrganizer && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="btn btn-secondary"
+              >
+                Modifier
+              </button>
+              <DeleteEventButton 
+                eventId={event.id} 
+                onDelete={() => router.refresh()}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {isOrganizer && (

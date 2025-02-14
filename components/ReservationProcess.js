@@ -27,7 +27,8 @@ export default function ReservationProcess({ event, userSession }) {
       lastName: userSession?.user?.name?.split(' ')[1] || '',
       email: userSession?.user?.email || '',
       phone: ''
-    }
+    },
+    status: 'confirmed'
   });
 
   const updateReservationData = (step, data) => {
@@ -37,9 +38,23 @@ export default function ReservationProcess({ event, userSession }) {
     }));
   };
 
+  const validateStep = (step) => {
+    switch (step) {
+      case 'tickets':
+        return reservationData.tickets > 0 && 
+               reservationData.tickets <= (event.totalSeats - event.reservedSeats);
+      case 'details':
+        return reservationData.userDetails.firstName && 
+               reservationData.userDetails.lastName && 
+               reservationData.userDetails.email;
+      default:
+        return true;
+    }
+  };
+
   const nextStep = () => {
     const currentIndex = steps.findIndex(step => step.id === currentStep);
-    if (currentIndex < steps.length - 1) {
+    if (currentIndex < steps.length - 1 && validateStep(currentStep)) {
       setCurrentStep(steps[currentIndex + 1].id);
     }
   };

@@ -27,8 +27,8 @@ export default function EventReservationsPage({ params }) {
 
   const fetchEventAndReservations = async () => {
     try {
-      // Récupérer les détails de l'événement
-      const eventResponse = await fetch(`/api/events/${params.id}`);
+      // Corriger le paramètre pour correspondre à la route API
+      const eventResponse = await fetch(`/api/events/${params.id}?include=organizerId`);
       const eventData = await eventResponse.json();
       
       if (!eventResponse.ok) throw new Error(eventData.message);

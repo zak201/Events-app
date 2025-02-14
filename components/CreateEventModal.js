@@ -14,7 +14,7 @@ const eventSchema = z.object({
   title: z.string().nonempty({ message: "Le titre est requis" }),
   date: z.string().nonempty({ message: "La date est requise" }),
   location: z.string().nonempty({ message: "Le lieu est requis" }),
-  capacity: z.preprocess((val) => parseInt(val, 10), z.number().min(1, { message: "La capacité doit être d'au moins 1" })),
+  capacity: z.preprocess((val) => parseInt(val, 10), z.number().min(1)),
   description: z.string().optional(),
 });
 
@@ -47,27 +47,13 @@ export default function CreateEventModal({ isOpen, onClose }) {
   const onSubmit = async (data) => {
     try {
       setIsSubmitting(true);
-      console.log('Données à envoyer:', data);
-      console.log('Type de createEvent:', typeof createEvent);
-
-      if (!imageFile || !isValidImage) {
-        setImageError('Une image valide est requise');
-        setIsSubmitting(false);
-        return;
-      }
-
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
         formData.append(key, value);
       });
       formData.append('image', imageFile);
 
-      await createEvent(formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
+      await createEvent(formData);
       toast.success('Événement créé avec succès');
       reset();
       setImageUrl('');
@@ -76,7 +62,6 @@ export default function CreateEventModal({ isOpen, onClose }) {
       onClose();
       window.location.reload();
     } catch (error) {
-      console.error('Erreur:', error);
       toast.error(error.message || 'Erreur lors de la création');
     } finally {
       setIsSubmitting(false);
@@ -121,8 +106,14 @@ export default function CreateEventModal({ isOpen, onClose }) {
           <input type="file" id="image" accept="image/*" className="input" onChange={handleImageChange} />
           {imageError && <p className="text-red-500 text-sm mt-1">{imageError}</p>}
           {imageUrl && isValidImage && (
-            <div className="relative h-48 w-full mt-2 rounded-lg overflow-hidden">
-              <Image src={imageUrl} alt="Prévisualisation" fill className="object-cover" />
+            <div className="mt-2">
+              <Image 
+                src={imageUrl}
+                alt="Prévisualisation"
+                width={200}
+                height={200}
+                className="rounded-lg"
+              />
             </div>
           )}
         </div>

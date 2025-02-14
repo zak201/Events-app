@@ -11,6 +11,22 @@ const reservationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  firstName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true
+  },
   seats: {
     type: Number,
     required: true,
@@ -21,25 +37,20 @@ const reservationSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'cancelled'],
     default: 'pending'
   },
-  paymentIntentId: String,
   validated: {
     type: Boolean,
     default: false
   },
-  validatedAt: Date,
-  userDetails: {
-    firstName: String,
-    lastName: String,
-    email: String,
-    phone: String
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  validatedAt: {
+    type: Date
   }
+}, {
+  timestamps: true
 });
 
 // Index pour améliorer les performances des requêtes
 reservationSchema.index({ eventId: 1, userId: 1 });
 
-export default mongoose.models.Reservation || mongoose.model('Reservation', reservationSchema); 
+const Reservation = mongoose.models?.Reservation || mongoose.model('Reservation', reservationSchema);
+
+export default Reservation; 

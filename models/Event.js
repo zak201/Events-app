@@ -32,11 +32,15 @@ const eventSchema = new mongoose.Schema({
   organizerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: [true, 'L\'organisateur est requis'],
   },
   reservedSeats: {
     type: Number,
     default: 0,
+  },
+  image: {
+    type: String,
+    default: '/images/default-event.jpg',
   }
 }, {
   timestamps: true, // Ajoute automatiquement createdAt et updatedAt

@@ -44,64 +44,32 @@ export const config = {
   }
 };
 
-export async function POST(req) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session || session.user.role !== 'organisateur') {
-    return NextResponse.json(
-      { error: 'Non autorisé' },
-      { status: 403 }
-    );
-  }
-  
+export async function POST(request) {
   try {
-    await dbConnect();
-    const formData = await req.formData();
-    
-    const eventData = {
-      title: formData.get('title'),
-      date: formData.get('date'),
-      location: formData.get('location'),
-      capacity: Number(formData.get('capacity')),
-      description: formData.get('description'),
-      organizerId: session.user.id,
-      reservedSeats: 0
-    };
-
-    const image = formData.get('image');
-    if (image) {
-      const bytes = await image.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      try {
-        await mkdir(uploadDir, { recursive: true });
-      } catch (err) {
-        if (err.code !== 'EEXIST') throw err;
-      }
-
-      const uniqueFilename = `${Date.now()}-${image.name}`;
-      const filePath = path.join(uploadDir, uniqueFilename);
-      
-      await writeFile(filePath, buffer);
-      eventData.imageUrl = `/uploads/${uniqueFilename}`;
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role === 'organisateur') {
+      return NextResponse.json(
+        { message: 'Non autorisé' },
+        { status: 401 }
+      );
     }
 
-    const validatedData = eventSchema.parse(eventData);
-    const event = await Event.create(validatedData);
+    await dbConnect();
+    const body = await request.json();
+    const validatedData = eventSchema.parse(body);
 
-    // Sérialiser le document avant de le renvoyer
-    const serializedEvent = serializeDocument(event.toObject());
+    const event = new Event({
+      ...validatedData,
+      organizerId: session.user.id,
+      reservedSeats: 0
+    });
 
-    return NextResponse.json(serializedEvent, { status: 201 });
+    await event.save();
+    return NextResponse.json(event, { status: 201 });
   } catch (error) {
-    console.error('Erreur création événement:', error);
     return NextResponse.json(
-      { 
-        message: 'Erreur lors de la création de l\'événement',
-        details: error.issues || error.message
-      },
-      { status: 400 }
+      { message: 'Erreur lors de la création de l\'événement' },
+      { status: 500 }
     );
   }
 } 

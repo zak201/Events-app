@@ -1,37 +1,26 @@
 import { dbConnect } from '@/lib/dbConnect';
 import Event from '@/models/Event';
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
-
-const eventSchema = z.object({
-  title: z.string().min(1),
-  date: z.string().min(1),
-  location: z.string().min(1),
-  description: z.string().min(1),
-  imageUrl: z.string().optional(),
-});
+import mongoose from 'mongoose';
 
 export async function GET(request, { params }) {
   try {
     await dbConnect();
-    
     const event = await Event.findById(params.id)
       .populate('organizerId', 'name email')
       .lean();
-    
+
     if (!event) {
       return NextResponse.json(
-        { error: 'Événement non trouvé' },
+        { message: 'Événement non trouvé' },
         { status: 404 }
       );
     }
 
-    const serializedEvent = serializeDocument(event);
-
-    return NextResponse.json(serializedEvent);
+    return NextResponse.json(event);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération de l\'événement' },
+      { message: 'Erreur lors de la récupération de l\'événement' },
       { status: 500 }
     );
   }

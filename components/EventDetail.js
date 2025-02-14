@@ -6,18 +6,18 @@ import Link from 'next/link';
 import { Calendar, MapPin, Users, Share2, Heart } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import ReservationModal from './ReservationModal';
+import { useRouter } from 'next/navigation';
 
 export default function EventDetail({ event, userSession }) {
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const router = useRouter();
 
   const availableSeats = event?.capacity - (event?.reservedSeats || 0);
   
-  const isOrganizer = userSession?.user?.id === (
-    event?.organizerId?.id || 
-    event?.organizerId?._id?.toString() || 
-    event?.organizerId?.toString()
-  );
+  const isOrganizer = userSession?.user?.id === event?.organizerId?.id;
+
+  const isEventPassed = new Date(event.date) < new Date();
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -33,6 +33,14 @@ export default function EventDetail({ event, userSession }) {
     }
   };
 
+  const handleReserveClick = () => {
+    if (!userSession) {
+      router.push(`/auth/login?callbackUrl=/events/${event.id}/reserve`);
+    } else {
+      router.push(`/events/${event.id}/reserve`);
+    }
+  };
+
   if (!event) {
     return <div>Événement non trouvé</div>;
   }
@@ -41,13 +49,15 @@ export default function EventDetail({ event, userSession }) {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         {/* Image de l'événement */}
-        <div className="relative h-64 md:h-96">
+        <div className="relative h-64 w-full mb-6">
           <Image
             src={event.imageUrl || '/images/default-event.jpg'}
             alt={event.title}
             fill
-            className="object-cover"
-            priority
+            className="object-cover rounded-lg"
+            onError={(e) => {
+              e.target.src = '/images/default-event.jpg';
+            }}
           />
         </div>
 
@@ -95,13 +105,14 @@ export default function EventDetail({ event, userSession }) {
 
           {/* Boutons d'action */}
           <div className="flex gap-4">
-            {!isOrganizer && (
+            {!isOrganizer && !isEventPassed && (
               <button
-                onClick={() => setIsReservationModalOpen(true)}
-                className="btn btn-primary flex-1"
-                disabled={availableSeats <= 0}
+                onClick={handleReserveClick}
+                disabled={availableSeats === 0 || isEventPassed}
+                className="btn btn-primary w-full md:w-auto"
               >
-                {availableSeats > 0 ? 'Réserver' : 'Complet'}
+                {isEventPassed ? 'Événement passé' : 
+                 availableSeats > 0 ? 'Réserver' : 'Complet'}
               </button>
             )}
             {isOrganizer && (
@@ -122,8 +133,12 @@ export default function EventDetail({ event, userSession }) {
               </span>
             </div>
             <div>
-              <p className="font-semibold">{event.organizerId?.name || 'Organisateur'}</p>
-              <p className="text-gray-600 dark:text-gray-300">{event.organizerId?.email || ''}</p>
+              <p className="font-semibold">
+                {event.organizerId?.name || 'Organisateur inconnu'}
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                {event.organizerId?.email || ''}
+              </p>
             </div>
           </div>
         </div>

@@ -25,8 +25,14 @@ export const authOptions = {
             return null;
           }
 
-          const isValid = await user.comparePassword(credentials.password);
+          const isValid = user.password === credentials.password;
           
+          console.log('Debug auth:', {
+            providedPassword: credentials.password,
+            storedPassword: user.password,
+            isValid
+          });
+
           if (!isValid) {
             console.log('Mot de passe invalide');
             return null;

@@ -22,30 +22,20 @@ export async function POST(request) {
       );
     }
 
-    // Hash du mot de passe
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(validatedData.password, salt);
-    console.log('Mot de passe haché créé');
-
-    // Création de l'utilisateur
-    const newUser = {
+    // Création de l'utilisateur avec mot de passe en clair
+    const newUser = await User.create({
       name: validatedData.name,
       email: validatedData.email.toLowerCase(),
-      password: hashedPassword,
-      role: validatedData.role
-    };
-
-    console.log('Création de l\'utilisateur avec:', {
-      ...newUser,
-      password: '[HIDDEN]'
+      password: validatedData.password, // Pas de hashage
+      role: validatedData.role || 'utilisateur'
     });
 
-    const user = await User.create(newUser);
-    console.log('Utilisateur créé avec ID:', user._id);
+    console.log('Utilisateur créé avec:', {
+      email: newUser.email,
+      password: newUser.password // Pour le debug uniquement
+    });
 
-    // Ne pas renvoyer le mot de passe
-    const { password, ...userWithoutPassword } = user.toObject();
-
+    const { password, ...userWithoutPassword } = newUser.toObject();
     return NextResponse.json(userWithoutPassword, { status: 201 });
   } catch (error) {
     console.error('Erreur d\'inscription:', error);

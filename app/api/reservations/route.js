@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { NextResponse } from 'next/server';
 import { reservationSchema } from '@/lib/validations/reservation';
+import mongoose from 'mongoose';
 
 export async function GET(request) {
   try {
@@ -17,12 +18,30 @@ export async function GET(request) {
     }
 
     await dbConnect();
-    const reservations = await Reservation.find({ userId: session.user.id })
+    const searchParams = new URL(request.url).searchParams;
+    let query = {};
+
+    // Filtres selon le rôle et les paramètres
+    if (session.user.role === 'organisateur') {
+      if (searchParams.has('eventId')) {
+        query.eventId = searchParams.get('eventId');
+      } else {
+        const userEvents = await Event.find({ organizerId: session.user.id });
+        const eventIds = userEvents.map(event => event._id);
+        query.eventId = { $in: eventIds };
+      }
+    } else {
+      query.userId = session.user.id;
+    }
+
+    const reservations = await Reservation.find(query)
       .populate('eventId')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json(reservations);
   } catch (error) {
+    console.error('Erreur récupération réservations:', error);
     return NextResponse.json(
       { message: 'Erreur lors de la récupération des réservations' },
       { status: 500 }
@@ -41,12 +60,9 @@ export async function POST(request) {
     }
 
     await dbConnect();
-    const data = await request.json();
-    
-    // Valider les données
-    const validatedData = reservationSchema.parse(data);
+    const body = await request.json();
+    const validatedData = reservationSchema.parse(body);
 
-    // Vérifier l'événement et la disponibilité
     const event = await Event.findById(validatedData.eventId);
     if (!event) {
       return NextResponse.json(
@@ -55,23 +71,22 @@ export async function POST(request) {
       );
     }
 
-    const availableSeats = event.capacity - event.reservedSeats;
-    if (validatedData.seats > availableSeats) {
+    // Vérifier la disponibilité
+    if (event.reservedSeats + validatedData.seats > event.totalSeats) {
       return NextResponse.json(
-        { message: 'Plus assez de places disponibles' },
+        { message: 'Plus de places disponibles' },
         { status: 400 }
       );
     }
 
-    // Créer la réservation
-    const reservation = await Reservation.create({
+    const reservation = new Reservation({
       ...validatedData,
       userId: session.user.id,
       status: 'confirmed'
     });
 
-    // Mettre à jour le nombre de places réservées
-    await Event.findByIdAndUpdate(validatedData.eventId, {
+    await reservation.save();
+    await Event.findByIdAndUpdate(event._id, {
       $inc: { reservedSeats: validatedData.seats }
     });
 

@@ -1,16 +1,37 @@
-// Supprimer l'utilisateur existant et en créer un nouveau
-const testUser = {
-  name: "Test User",
-  email: "z.anouar832@gmail.com",
-  password: "test123", // Mot de passe simple pour le test
-  role: "utilisateur"
-};
+const { dbConnect } = require('../lib/dbConnect');
+const User = require('../models/User');
 
-fetch('/api/auth/register', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(testUser)
-})
-.then(r => r.json())
-.then(console.log)
-.catch(console.error); 
+async function resetUser() {
+  try {
+    await dbConnect();
+    
+    const email = 'z.anouar832@gmail.com';
+    const password = '123456'; // Mot de passe en clair
+    
+    // Mettre à jour ou créer l'utilisateur
+    const user = await User.findOneAndUpdate(
+      { email },
+      {
+        $set: {
+          name: 'ANOUAR Zakaria',
+          password: password, // Stockage en clair
+          role: 'utilisateur'
+        }
+      },
+      { upsert: true, new: true }
+    );
+    
+    console.log('Utilisateur réinitialisé avec succès:', {
+      id: user._id,
+      email: user.email,
+      password: user.password, // Pour vérification
+      role: user.role
+    });
+    
+  } catch (error) {
+    console.error('Erreur:', error);
+  }
+  process.exit(0);
+}
+
+resetUser(); 

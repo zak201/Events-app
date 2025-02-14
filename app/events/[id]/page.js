@@ -5,48 +5,83 @@ import { dbConnect } from '@/lib/dbConnect';
 import Event from '@/models/Event';
 import EventDetail from '@/components/EventDetail';
 import Loading from '@/components/Loading';
+import { notFound } from 'next/navigation';
+import mongoose from 'mongoose';
 
 export async function generateMetadata({ params }) {
-  await dbConnect();
-  const event = await Event.findById(params.id).populate('organizerId', 'name');
-  
-  return {
-    title: `${event.title} | Events-app`,
-    description: event.description.slice(0, 160),
-    openGraph: {
-      title: event.title,
-      description: event.description.slice(0, 160),
-      images: [event.imageUrl || '/images/default-event.jpg'],
-    },
-  };
+  try {
+    await dbConnect();
+    
+    // Vérifier si l'ID est valide
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      return {
+        title: 'Événement non trouvé | Events App',
+      };
+    }
+
+    const event = await Event.findById(params.id).lean();
+    
+    if (!event) {
+      return {
+        title: 'Événement non trouvé | Events App',
+      };
+    }
+
+    return {
+      title: `${event.title} | Events App`,
+    };
+  } catch (error) {
+    console.error('Erreur metadata:', error);
+    return {
+      title: 'Événement | Events App',
+    };
+  }
 }
 
 export default async function EventPage({ params }) {
-  const session = await getServerSession(authOptions);
-  await dbConnect();
-  
-  const event = await Event.findById(params.id)
-    .populate('organizerId', 'name email')
-    .lean();
+  try {
+    await dbConnect();
+    
+    // Vérifier si l'ID est valide
+    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+      notFound();
+    }
 
-  if (!event) {
+    // Ajouter populate pour récupérer les infos de l'organisateur
+    const event = await Event.findById(params.id)
+      .populate({
+        path: 'organizerId',
+        select: 'name email role'
+      })
+      .lean();
+
+    if (!event) {
+      notFound();
+    }
+
+    const session = await getServerSession(authOptions);
+
+    // Sérialiser l'événement avec les infos de l'organisateur
+    const serializedEvent = {
+      ...event,
+      _id: event._id.toString(),
+      id: event._id.toString(),
+      organizerId: event.organizerId ? {
+        ...event.organizerId,
+        _id: event.organizerId._id.toString(),
+        id: event.organizerId._id.toString()
+      } : null,
+      createdAt: event.createdAt?.toISOString(),
+      updatedAt: event.updatedAt?.toISOString(),
+    };
+
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">
-            Événement non trouvé
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            L'événement que vous recherchez n'existe pas ou a été supprimé.
-          </p>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <EventDetail event={serializedEvent} userSession={session} />
       </div>
     );
+  } catch (error) {
+    console.error('Erreur page événement:', error);
+    notFound();
   }
-
-  return (
-    <Suspense fallback={<Loading />}>
-      <EventDetail event={event} userSession={session} />
-    </Suspense>
-  );
 } 
