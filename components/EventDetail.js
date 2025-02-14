@@ -7,6 +7,7 @@ import { Calendar, MapPin, Users, Share2, Heart } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import ReservationModal from './ReservationModal';
 import { useRouter } from 'next/navigation';
+import DeleteEventButton from './DeleteEventButton';
 
 export default function EventDetail({ event, userSession }) {
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
@@ -18,6 +19,8 @@ export default function EventDetail({ event, userSession }) {
   const isOrganizer = userSession?.user?.id === event?.organizerId?.id;
 
   const isEventPassed = new Date(event.date) < new Date();
+
+  const isOwner = userSession?.user?.id === event.organizerId?.id;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -105,7 +108,7 @@ export default function EventDetail({ event, userSession }) {
 
           {/* Boutons d'action */}
           <div className="flex gap-4">
-            {!isOrganizer && !isEventPassed && (
+            {!isOwner && !isEventPassed && (
               <button
                 onClick={handleReserveClick}
                 disabled={availableSeats === 0 || isEventPassed}
@@ -115,10 +118,20 @@ export default function EventDetail({ event, userSession }) {
                  availableSeats > 0 ? 'Réserver' : 'Complet'}
               </button>
             )}
-            {isOrganizer && (
-              <Link href={`/events/${event.id}/edit`} className="btn btn-secondary flex-1">
-                Modifier
-              </Link>
+            {isOwner && (
+              <>
+                <Link 
+                  href={`/events/${event.id}/edit`} 
+                  className="btn btn-secondary flex-1"
+                >
+                  Modifier
+                </Link>
+                <DeleteEventButton 
+                  eventId={event.id}
+                  onDelete={() => router.push('/')}
+                  className="btn btn-danger flex-1"
+                />
+              </>
             )}
           </div>
         </div>

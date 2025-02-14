@@ -22,7 +22,7 @@ const EventCard = ({ event }) => {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const isOrganizer = session?.user?.role === 'organisateur';
+  const isOwner = session?.user?.id === event.organizerId?.toString();
   const isFullyBooked = event.reservedSeats >= event.capacity;
   const isEventPassed = new Date(event.date) < new Date();
 
@@ -105,7 +105,7 @@ const EventCard = ({ event }) => {
               <span>Détails</span>
             </Link>
 
-            {isOrganizer ? (
+            {isOwner && (
               <>
                 <button
                   onClick={() => setIsEditModalOpen(true)}
@@ -119,7 +119,9 @@ const EventCard = ({ event }) => {
                   className="btn btn-danger flex items-center justify-center gap-2 h-10 px-4"
                 />
               </>
-            ) : (
+            )}
+
+            {!isOwner && (
               <button
                 onClick={handleReserveClick}
                 disabled={isFullyBooked || isEventPassed}

@@ -1,7 +1,22 @@
 import { dbConnect } from '@/lib/dbConnect';
 import Event from '@/models/Event';
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../auth/[...nextauth]/route';
+
+// Middleware de vérification de propriété
+async function verifyEventOwnership(eventId, userId) {
+  const event = await Event.findById(eventId);
+  if (!event) {
+    throw new Error('Événement non trouvé');
+  }
+  
+  if (event.organizerId.toString() !== userId) {
+    throw new Error('Non autorisé - vous n\'êtes pas l\'organisateur de cet événement');
+  }
+  
+  return event;
+}
 
 export async function GET(request, { params }) {
   try {
@@ -28,20 +43,45 @@ export async function GET(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'organisateur') {
+      return NextResponse.json(
+        { message: 'Non autorisé' },
+        { status: 401 }
+      );
+    }
+
     await dbConnect();
-    const event = await Event.findByIdAndDelete(params.id);
+    
+    // Récupérer l'événement et vérifier la propriété
+    const event = await Event.findById(params.id);
     
     if (!event) {
       return NextResponse.json(
-        { error: 'Événement non trouvé' },
+        { message: 'Événement non trouvé' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ message: 'Événement supprimé avec succès' });
+    // Vérifier si l'utilisateur est le propriétaire
+    if (event.organizerId.toString() !== session.user.id) {
+      return NextResponse.json(
+        { message: 'Non autorisé - vous n\'êtes pas l\'organisateur de cet événement' },
+        { status: 403 }
+      );
+    }
+    
+    // Supprimer l'événement
+    await Event.findByIdAndDelete(params.id);
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Événement supprimé avec succès' 
+    });
   } catch (error) {
+    console.error('Erreur suppression événement:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la suppression de l\'événement' },
+      { message: error.message || 'Erreur lors de la suppression' },
       { status: 500 }
     );
   }
@@ -49,34 +89,31 @@ export async function DELETE(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
-    const data = await request.json();
-    const validatedData = eventSchema.parse(data);
-    
-    await dbConnect();
-    const event = await Event.findByIdAndUpdate(
-      params.id, 
-      validatedData,
-      { new: true, runValidators: true }
-    );
-    
-    if (!event) {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'organisateur') {
       return NextResponse.json(
-        { error: 'Événement non trouvé' },
-        { status: 404 }
+        { message: 'Non autorisé' },
+        { status: 401 }
       );
     }
 
+    await dbConnect();
+    
+    // Vérifier la propriété de l'événement
+    await verifyEventOwnership(params.id, session.user.id);
+    
+    const data = await request.json();
+    const event = await Event.findByIdAndUpdate(
+      params.id,
+      data,
+      { new: true, runValidators: true }
+    );
+
     return NextResponse.json(event);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Données invalides', details: error.errors },
-        { status: 400 }
-      );
-    }
     return NextResponse.json(
-      { error: 'Erreur lors de la mise à jour de l\'événement' },
-      { status: 500 }
+      { message: error.message || 'Erreur lors de la mise à jour' },
+      { status: error.message.includes('Non autorisé') ? 403 : 500 }
     );
   }
 } 

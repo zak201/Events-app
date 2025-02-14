@@ -4,7 +4,6 @@ import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 import clientPromise from '@/lib/mongodb';
 import { dbConnect } from '@/lib/dbConnect';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
 
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
@@ -18,13 +17,13 @@ export const authOptions = {
       async authorize(credentials) {
         try {
           await dbConnect();
-          const user = await User.findOne({ email: credentials.email });
+          const user = await User.findOne({ email: credentials.email }).select('+password');
           
           if (!user) {
             throw new Error('Email ou mot de passe incorrect');
           }
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
+          const isValid = user.password === credentials.password;
           
           if (!isValid) {
             throw new Error('Email ou mot de passe incorrect');

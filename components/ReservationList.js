@@ -1,17 +1,53 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import ReservationPDF from './ReservationPDF';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import Loading from './Loading';
+import ErrorMessage from './ErrorMessage';
 
-export default function ReservationList({ reservations: initialReservations }) {
-  const [reservations, setReservations] = useState(initialReservations);
-  const [isLoading, setIsLoading] = useState(false);
+export default function ReservationList() {
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const router = useRouter();
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      try {
+        const response = await fetch('/api/reservations/my-reservations');
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des réservations');
+        }
+        const data = await response.json();
+        setReservations(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchReservations();
+    }
+  }, [session]);
+
+  if (loading) return <Loading />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!reservations || reservations.length === 0) {
+    return (
+      <p className="text-center text-gray-500">
+        Vous n'avez pas encore de réservations.
+      </p>
+    );
+  }
 
   const handleCancelReservation = async (reservationId) => {
     try {
@@ -19,7 +55,6 @@ export default function ReservationList({ reservations: initialReservations }) {
         return;
       }
 
-      setIsLoading(true);
       const response = await fetch(`/api/reservations/${reservationId}/cancel`, {
         method: 'POST'
       });
@@ -41,8 +76,6 @@ export default function ReservationList({ reservations: initialReservations }) {
       router.refresh();
     } catch (error) {
       toast.error(error.message || 'Erreur lors de l\'annulation');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -74,7 +107,7 @@ export default function ReservationList({ reservations: initialReservations }) {
 
   return (
     <div className="space-y-6">
-      {reservations.map((reservation) => (
+      {reservations?.map((reservation) => (
         <div
           key={reservation._id}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden"
@@ -126,10 +159,9 @@ export default function ReservationList({ reservations: initialReservations }) {
                   {reservation.status !== 'cancelled' && (
                     <button
                       onClick={() => handleCancelReservation(reservation._id)}
-                      disabled={isLoading}
                       className="btn btn-danger"
                     >
-                      {isLoading ? 'Annulation...' : 'Annuler'}
+                      Annuler
                     </button>
                   )}
                 </div>
@@ -138,14 +170,6 @@ export default function ReservationList({ reservations: initialReservations }) {
           </div>
         </div>
       ))}
-
-      {reservations.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">
-            Vous n'avez pas encore de réservation.
-          </p>
-        </div>
-      )}
     </div>
   );
 } 

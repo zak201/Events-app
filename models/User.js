@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Méthode simplifiée pour comparer les mots de passe (comparaison directe)
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = function(candidatePassword) {
   return this.password === candidatePassword;
 };
 
